@@ -1,9 +1,16 @@
 version = 1
+revision = 1
 requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version < '3.10'",
     "python_full_version >= '3.10' and python_full_version < '3.13'",
     "python_full_version >= '3.13'",
+]
+
+[manifest]
+members = [
+    "manim",
+    "manimations",
 ]
 
 [[package]]
@@ -1575,6 +1582,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.12.0" },
     { name = "watchdog", specifier = ">=2.0.0" },
 ]
+provides-extras = ["gui", "jupyterlab"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1600,6 +1608,17 @@ dev = [
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
     { name = "types-pygments", specifier = ">=2.19.0.20250107" },
 ]
+
+[[package]]
+name = "manimations"
+version = "0.1.0"
+source = { virtual = "manimations" }
+dependencies = [
+    { name = "manim" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "manim", editable = "." }]
 
 [[package]]
 name = "manimpango"
