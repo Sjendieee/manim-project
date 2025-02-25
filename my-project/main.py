@@ -1,5 +1,6 @@
-from scipy import np_maxversion
 import manim as mn
+import numpy as np
+
 from manim import *
 #config.media_width = "75%"
 #config.verbosity = "WARNING"
@@ -195,9 +196,6 @@ class SineCurveUnitCircle(Scene):
         dot.remove_updater(go_around_circle)
 
 
-from manim import *
-
-
 class SinToLinear(Scene):
     def construct(self):
         self.camera.frame_height = 8
@@ -255,8 +253,6 @@ class SinToLinear(Scene):
 
         self.play(Write(graph_b_label))
         self.wait(2)
-
-from manim import *
 
 class SinToLinearSeparateAxes(Scene):
     def construct(self):
@@ -330,13 +326,15 @@ class SinToLinearSeparateAxes(Scene):
         self.wait(2)
 
 
-from manim import *
-
+#TODO next step: incorporate actual data Intensity profile & corresponding height profile
 class SinToLinearSeparateAxes2(Scene):
     def construct(self):
+
+        thickness_offset = 120 #TODO implement thickness offset
+
         # Adjust camera view to ensure everything is visible
-        self.camera.frame_height = 10  # Adjust height of frame to fit both graphs
-        self.camera.frame_width = 14
+        self.camera.frame_height = 14  # Adjust height of frame to fit both graphs      12
+        self.camera.frame_width = 15
 
         # Define Axes for the Sine-like Graph (Bottom Graph)
         axes_a = Axes(
@@ -352,23 +350,23 @@ class SinToLinearSeparateAxes2(Scene):
         # Define Axes for the Linear Graph (Top Graph)
         axes_b = Axes(
             x_range=[0, 6 * 3.14, 3.14],
-            y_range=[0, 3.14 * 3 * 6, 3.14 * 3 * 6 / 5],
+            y_range=[0, 3.14 * 3 * 7, 3.14 * 3],
             axis_config={"color": WHITE},
             x_length=10,
             y_length=7,
-            x_axis_config={"numbers_to_include": np.arange(0, 3.14 * 6, 3.14)},
-            y_axis_config={"numbers_to_include": np.arange(0, 3.14 * 3 * 6, 3.14 * 3 * 6 / 5)},
+            #x_axis_config={"numbers_to_include": np.arange(0, 3.14 * 6, 3.14)},
+            y_axis_config={"numbers_to_include": np.arange(0, 3.14 * 3 * 6, 10)},
         ).shift(UP * 3)  # Move the linear graph upwards
 
         # Labels
-        x_label_a = axes_a.get_x_axis_label("distance [rad]")
-        y_label_a = axes_a.get_y_axis_label("Intensity [-]")
-        x_label_b = axes_b.get_x_axis_label("")
-        y_label_b = axes_b.get_y_axis_label("height [nm]")
+        x_label_a = axes_a.get_x_axis_label("Distance [rad]").shift(DOWN*2)
+        y_label_a = axes_a.get_y_axis_label("Intensity [-]").shift(LEFT * 6, DOWN*2).rotate(0.5*PI)  # Move the label left & rotate 90 deg
+        x_label_b = axes_b.get_x_axis_label("")  # Move
+        y_label_b = axes_b.get_y_axis_label("Height [nm]").shift(LEFT * 6, DOWN*1).rotate(0.5*PI)  # Move the top graph left & rotate 90 deg
 
         # Graph A: Sine-like Curve
         graph_a = axes_a.plot(lambda x: 0.4*np.cos(x) + 0.5, color=BLUE)
-        graph_a_label = axes_a.get_graph_label(graph_a, label="a cos(x) + b", x_val=5)
+        graph_a_label = axes_a.get_graph_label(graph_a, label="a cos(x) + b", x_val=5).shift(RIGHT*3.8, UP*1.25)
 
         # Graph B: Linear Function y = 3x
         graph_b = axes_b.plot(lambda x: 3 * x, color=RED)
@@ -391,7 +389,7 @@ class SinToLinearSeparateAxes2(Scene):
             segments.append(segment)
 
             # Corresponding segment on the linear graph
-            transformed_segment = axes_b.plot(lambda x: 1.5 * x,
+            transformed_segment = axes_b.plot(lambda x: 3 * x,            #Was 1.5*x??
                                               x_range=[x_start, x_end],
                                               color=RED, stroke_width=4)
             transformed_segments.append(transformed_segment)
