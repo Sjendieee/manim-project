@@ -328,9 +328,11 @@ class SinToLinearSeparateAxes(Scene):
 
 #TODO next step: incorporate actual data Intensity profile & corresponding height profile
 class SinToLinearSeparateAxes2(Scene):
+    #manim -pql .\main.py SinToLinearSeparateAxes2
     def construct(self):
 
         thickness_offset = 120 #TODO implement thickness offset
+        final_thickness = 700
 
         # Adjust camera view to ensure everything is visible
         self.camera.frame_height = 14  # Adjust height of frame to fit both graphs      12
@@ -350,7 +352,7 @@ class SinToLinearSeparateAxes2(Scene):
         # Define Axes for the Linear Graph (Top Graph)
         axes_b = Axes(
             x_range=[0, 6 * 3.14, 3.14],
-            y_range=[0, 3.14 * 3 * 7, 3.14 * 3],
+            y_range=[thickness_offset - 10, final_thickness + 10, 100],
             axis_config={"color": WHITE},
             x_length=10,
             y_length=7,
