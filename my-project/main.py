@@ -1,7 +1,14 @@
+from matplotlib import pyplot as plt
+
 import manim as mn
 import numpy as np
-
+import csv
+import os
+#import pandas as pd
 from manim import *
+from manim.utils.color.XKCD import ORANGERED
+
+
 #config.media_width = "75%"
 #config.verbosity = "WARNING"
 
@@ -327,9 +334,15 @@ class SinToLinearSeparateAxes(Scene):
 
 
 #TODO next step: incorporate actual data Intensity profile & corresponding height profile
-class SinToLinearSeparateAxes2(Scene):
+class SinToLinear_Function_model(Scene):
     #manim -pql .\main.py SinToLinearSeparateAxes2
     def construct(self):
+
+        #Import experimental data
+        df = pd.read_csv('F:\\2023_11_13_PLMA_Dodecane_Basler5x_Xp_1_24S11los_misschien_WEDGE_v2\\Swellingimages\\data8min_anchor30_PureIntensity.csv')
+        x_distance = df['xrange (pixels)']
+        y_intensity = df['Intensity converted (-)']
+        y_height = df['height (nm)']
 
         thickness_offset = 120 #TODO implement thickness offset
         final_thickness = 700
@@ -410,4 +423,349 @@ class SinToLinearSeparateAxes2(Scene):
                       Transform(segments[i], transformed_segments[i]), run_time=1.5)
 
         self.play(Write(graph_b_label))
+        self.wait(2)
+
+
+class ExperimentalDataAnimation(Scene):
+    #manim -pql .\main.py SinToLinearSeparateAxes2
+    def construct(self):
+        # Import experimental data
+        basepath = 'F:\\2025-01-30 PLMA-dodecane-Zeiss-Basler15uc-Xp1_32_BiBB4_tiltedplate-5deg-covered\\Swellingimages'
+        fname = os.path.join(basepath, 'data28min 1s_anchor30_PureIntensity.csv')
+        f_name_minmax = os.path.join(basepath, 'MinAndMaximaHandpicked264_1735_590.0211860602973_50.txt')
+        file = open(fname)
+        csvreader = csv.reader(file)
+        x_distance = []
+        y_intensity = []
+        y_height = []
+        for row in csvreader:
+            try:
+                x_distance.append(float(row[0]))  # distance [pixels]
+                y_intensity.append(float(row[1]))  # intensity [-]
+                y_height.append(float(row[3]))  # height
+            except:
+                print("!Some value could not be casted to a float. Whether that is an issue or not is up to the user.!")
+        file.close()
+        #Import extrema indexes
+        minmax_ordered = [0]
+        f = open(f_name_minmax, 'r')
+        lines = f.readlines()
+        for line in lines:
+            data = line.split(',')
+            minmax_ordered.append(int(data[0]))  # add already analyzed img nr's into a list, so later we can check if this analysis already exists
+        minmax_ordered.append(len(y_intensity))
+
+        # Adjust camera view to ensure everything is visible
+        self.camera.frame_height = 14  # Adjust height of frame to fit both graphs      12
+        self.camera.frame_width = 15
+
+        # Define Axes for the Sine-like Graph (Bottom Graph)
+        # Intensity vs distance
+        axes_a = Axes(
+            x_range=[0, max(x_distance), 100],
+            y_range=[0, max(y_intensity)+10, 50],
+            axis_config={"color": WHITE},
+            x_length=10,
+            y_length=3,
+            x_axis_config={"numbers_to_include": np.arange(0, max(x_distance), 100)},
+            y_axis_config={"numbers_to_include": np.arange(0, max(y_intensity)+10, 50)},
+            tips=False
+        ).shift(DOWN * 3)  # Move the cosine graph downwards
+
+        # Define Axes for the Linear Graph (Top Graph)
+        axes_b = Axes(
+            x_range=[0, max(x_distance), 100],
+            y_range=[150, max(y_height) + 10, 200],
+            axis_config={"color": WHITE},
+            x_length=10,
+            y_length=7,
+            #x_axis_config={"numbers_to_include": np.arange(0, 3.14 * 6, 3.14)},
+            y_axis_config={"numbers_to_include": np.arange(150, max(y_height) + 10, 200)},
+            tips=False
+        ).shift(UP * 3)  # Move the linear graph upwards
+
+        # Labels
+        x_label_a = axes_a.get_x_axis_label(Text(r"Distance [pixels]", font_size=30)).shift(DOWN*2, LEFT*0.5)
+        y_label_a = axes_a.get_y_axis_label(Text(r"Intensity [-]", font_size=30)).shift(LEFT * 5.15, DOWN*1.8).rotate(0.5*PI)  # Move the label left & rotate 90 deg
+        x_label_b = axes_b.get_x_axis_label("")  # Move
+        y_label_b = axes_b.get_y_axis_label(Text(r"Height [nm]", font_size=30)).shift(LEFT * 5.15, DOWN*1).rotate(0.5*PI)  # Move the top graph left & rotate 90 deg
+
+        graph_a = axes_a.plot_line_graph(x_distance, y_intensity, add_vertex_dots=False, line_color=BLUE)
+        # Placeholder for Graph B (initially empty)
+        graph_b = VGroup()  # Will be populated in animation
+
+        #graph_a_label = axes_a.get_graph_label(graph_a, label="Intensity profile", x_val=5).shift(RIGHT*3.8, UP*1.25)#TODO fix labels
+        graph_a_label = Text(r"Experimental Intensity Profile", font_size=35).next_to(axes_a, UP, buff=0.1)
+        graph_b_label = Text(r"Brush Height Profile", font_size=35).next_to(axes_b, UP, buff=-0.5)
+        #graph_b_label = axes_b.get_graph_label(graph_b, label=Tex(r"$\lambda N / 2n$"), x_val=5)#TODO fix labels
+
+        # Add axes and labels
+        self.play(Create(axes_a), Write(x_label_a), Write(y_label_a), Write(graph_a_label))
+        self.play(Create(axes_b), Write(x_label_b), Write(y_label_b), Write(graph_b_label))
+
+        # Show Graph A
+        self.play(Create(graph_a))
+        self.wait(1)
+
+        # Create dots for extrema (but don't show them yet)
+        extrema_dots = [
+            Dot(axes_a.coords_to_point(x_distance[i], y_intensity[i]), color=ORANGE).scale(1.1)
+            for i in minmax_ordered[1:-1]
+        ]
+        # Animate extrema appearing one after another
+        for dot in extrema_dots:
+            self.play(FadeIn(dot), run_time=0.08)
+        self.wait(1)
+
+        # Animate transferring segments from (a) to (b)
+        for i in range(0, len(minmax_ordered)-1):  # Take segments of 10 points
+            r1 = minmax_ordered[i]
+            r2 = minmax_ordered[i+1]+1
+            segment_a = axes_a.plot_line_graph(
+                x_distance[r1:r2], y_intensity[r1:r2], add_vertex_dots=False, line_color=BLUE
+            )
+            segment_b = axes_b.plot_line_graph(
+                x_distance[r1:r2], y_height[r1:r2], add_vertex_dots=False, line_color=RED
+            )
+            self.play(Transform(segment_a, segment_b), run_time=0.8)
+            graph_b.add(segment_b)
+
+        self.wait(2)
+
+
+class ExperimentalDataAnimationWhite(Scene):
+    #manim -pql .\main.py ExperimentalDataAnimationWhite
+    config.background_color = WHITE
+    def construct(self):
+        # Import experimental data
+        basepath = 'F:\\2025-01-30 PLMA-dodecane-Zeiss-Basler15uc-Xp1_32_BiBB4_tiltedplate-5deg-covered\\Swellingimages'
+        fname = os.path.join(basepath, 'data28min 1s_anchor30_PureIntensity.csv')
+        f_name_minmax = os.path.join(basepath, 'MinAndMaximaHandpicked264_1735_590.0211860602973_50.txt')
+        file = open(fname)
+        csvreader = csv.reader(file)
+        x_distance = []
+        y_intensity = []
+        y_height = []
+        for row in csvreader:
+            try:
+                x_distance.append(float(row[0]))  # distance [pixels]
+                y_intensity.append(float(row[1]))  # intensity [-]
+                y_height.append(float(row[3]))  # height
+            except:
+                print("!Some value could not be casted to a float. Whether that is an issue or not is up to the user.!")
+        file.close()
+        #Import extrema indexes
+        minmax_ordered = [0]
+        f = open(f_name_minmax, 'r')
+        lines = f.readlines()
+        for line in lines:
+            data = line.split(',')
+            minmax_ordered.append(int(data[0]))  # add already analyzed img nr's into a list, so later we can check if this analysis already exists
+        minmax_ordered.append(len(y_intensity))
+
+        # Adjust camera view to ensure everything is visible
+        self.camera.frame_height = 15  # Adjust height of frame to fit both graphs      12
+        self.camera.frame_width = 13
+
+        # Define Axes for the Sine-like Graph (Bottom Graph)
+        # Intensity vs distance
+        axes_a = Axes(
+            x_range=[0, max(x_distance), 100],
+            y_range=[0, max(y_intensity)+10, 50],
+            axis_config={"color": BLACK},
+            x_length=10,
+            y_length=3,
+            x_axis_config={"numbers_to_include": np.arange(0, max(x_distance), 100), "color": BLACK},
+            y_axis_config={"numbers_to_include": np.arange(0, max(y_intensity)+10, 50), "color": BLACK},
+            tips=False
+        ).shift(DOWN * 3)  # Move the cosine graph downwards
+
+        # Define Axes for the Linear Graph (Top Graph)
+        axes_b = Axes(
+            x_range=[0, max(x_distance), 100],
+            y_range=[0, max(y_height) + 10, 200],
+            axis_config={"color": BLACK},
+            x_length=10,
+            y_length=7,
+            #x_axis_config={"numbers_to_include": np.arange(0, 3.14 * 6, 3.14)},
+            y_axis_config={"numbers_to_include": np.arange(0, max(y_height) + 10, 200), "color": BLACK},
+            tips=False
+        ).shift(UP * 3)  # Move the linear graph upwards
+        for tick in axes_a.x_axis.numbers + axes_a.y_axis.numbers:
+            tick.set_color(BLACK)
+        for tick in axes_b.y_axis.numbers:
+            tick.set_color(BLACK)
+
+        # Labels
+        x_label_a = axes_a.get_x_axis_label(Text(r"Distance [pixels]", font_size=30, color=BLACK)).shift(DOWN*2, LEFT*0.5)
+        y_label_a = axes_a.get_y_axis_label(Text(r"Intensity [-]", font_size=30, color=BLACK)).shift(LEFT * 5.15, DOWN*1.8).rotate(0.5*PI)  # Move the label left & rotate 90 deg
+        x_label_b = axes_b.get_x_axis_label("")  # Move
+        y_label_b = axes_b.get_y_axis_label(Text(r"Height [nm]", font_size=30, color=BLACK)).shift(LEFT * 5.15, DOWN*1).rotate(0.5*PI)  # Move the top graph left & rotate 90 deg
+
+        graph_a = axes_a.plot_line_graph(x_distance, y_intensity, add_vertex_dots=False, line_color=BLUE)
+        # Placeholder for Graph B (initially empty)
+        graph_b = VGroup()  # Will be populated in animation
+
+        graph_a_label = Text(r"Experimental Intensity Profile", font_size=35, color=BLACK).next_to(axes_a, UP, buff=0.1)
+        graph_b_label = Text(r"Brush Height Profile", font_size=35, color=BLACK).next_to(axes_b, UP, buff=0.05)
+
+        # Add axes and labels
+        self.play(Create(axes_a), Write(x_label_a), Write(y_label_a), Write(graph_a_label))
+        self.play(Create(axes_b), Write(x_label_b), Write(y_label_b), Write(graph_b_label))
+
+        # Show Graph A
+        self.play(Create(graph_a))
+        self.wait(1)
+
+        ################ Animate extrema appearing one after another ###############
+        # Create dots for extrema (but don't show them yet)
+        extrema_dots = [
+            Dot(axes_a.coords_to_point(x_distance[i], y_intensity[i]), color=ORANGE).scale(1.1)
+            for i in minmax_ordered[1:-1]
+        ]
+        # Animate extrema appearing one after another
+        for dot in extrema_dots:
+            self.play(FadeIn(dot), run_time=0.08)
+        self.wait(1)
+
+        ################ Animate transferring segments from (a) to (b) ###############
+        for i in range(0, len(minmax_ordered)-1):  # Take segments of 10 points
+            r1 = minmax_ordered[i]
+            r2 = minmax_ordered[i+1]+1
+            segment_a = axes_a.plot_line_graph(
+                x_distance[r1:r2], y_intensity[r1:r2], add_vertex_dots=False, line_color=BLUE
+            )
+            segment_b = axes_b.plot_line_graph(
+                x_distance[r1:r2], y_height[r1:r2], add_vertex_dots=False, line_color=RED
+            )
+            self.play(Transform(segment_a, segment_b), run_time=0.8)
+            graph_b.add(segment_b)
+
+        self.wait(2)
+
+        # Define i1 as the index where the transition happens
+        i1 = 280  # Dry-swollen brush
+        i2 = 590  # Swollen brush - droplet
+
+        ############## Animate linear fit on Droplet part
+        # Get the two points (x1, y1) and (x2, y2)
+        x1, y1 = x_distance[i2], y_height[i2]
+        x2, y2 = x_distance[-1], y_height[-1]
+
+        # Compute slope (m) and intercept (b) for y = mx + b
+        m = (y2 - y1) / (x2 - x1)
+        b = y1 - m * x1
+
+        # Extend the x-range slightly beyond x1 & x2
+        x_extra = (x2 - x1) * 0.1  # Extend by 10% of the segment length
+        x_start = (y1/2 - b)/m  #x at half-height 0-y(swollenbrush-drop)
+        x_end = x2 + x_extra
+
+        # Compute corresponding y-values using y = mx + b
+        y_start = m * x_start + b
+        y_end = m * x_end + b
+
+        fitted_line = axes_b.plot_line_graph(
+            [x_end, x_start], [y_end, y_start], add_vertex_dots=False, line_color=ORANGERED, stroke_width=6
+        )
+
+        # Animate the line appearing from right to left
+        self.play(Create(fitted_line), run_time=1.5, rate_func=linear)
+
+        ############## Animate color backgrounds for Dry, Swollen & Droplet part ###############
+
+        #####Dry - swollen brush
+        x_values_brush = x_distance[:i1+1]  # Get corresponding x position
+        y_values_brush = y_height[:i1+1]  # Corresponding Y values
+        # Convert to scene coordinates
+        brush_points = [axes_b.c2p(x, y) for x, y in zip(x_values_brush, y_values_brush)]
+        # Add bottom boundary (close the polygon)
+        bottom_left = axes_b.c2p(x_values_brush[0], 0)  # Lowest y in range
+        bottom_right = axes_b.c2p(x_values_brush[-1], 0)
+        # Create a filled shape for the brush region
+        brush_fill_dry = Polygon(
+            bottom_left, *brush_points, bottom_right, color=DARK_BLUE, fill_opacity=0.3, stroke_opacity=0
+        )
+        #####Dry - swollen brush
+        x_values_brush = x_distance[i1:i2+1]  # Get corresponding x position
+        y_values_brush = y_height[i1:i2+1]  # Corresponding Y values
+        # Convert to scene coordinates
+        brush_points = [axes_b.c2p(x, y) for x, y in zip(x_values_brush, y_values_brush)]
+        # Add bottom boundary (close the polygon)
+        bottom_left = axes_b.c2p(x_values_brush[0], 0)  # Lowest y in range
+        bottom_right = axes_b.c2p(x_values_brush[-1], 0)
+        # Create a filled shape for the brush region
+        brush_fill_swollen = Polygon(
+            bottom_left, *brush_points, bottom_right, color=BLUE, fill_opacity=0.3, stroke_opacity=0
+        )
+        #####Dry - swollen brush
+        x_values_brush = x_distance[i2:]  # Get corresponding x position
+        y_values_brush = y_height[i2:]  # Corresponding Y values
+        # Convert to scene coordinates
+        brush_points = [axes_b.c2p(x, y) for x, y in zip(x_values_brush, y_values_brush)]
+        # Add bottom boundary (close the polygon)
+        bottom_left = axes_b.c2p(x_values_brush[0], 0)  # Lowest y in range
+        bottom_right = axes_b.c2p(x_values_brush[-1], 0)
+        # Create a filled shape for the brush region
+        brush_fill_droplet = Polygon(
+            bottom_left, *brush_points, bottom_right, color=ORANGE, fill_opacity=0.3, stroke_opacity=0
+        )
+
+        # --- Position Text Labels Above Regions ---
+        # Find the middle x-position of the Dry Brush region
+        brush_x_center = (x_distance[0] + x_distance[i1]) / 2
+        brush_y_top = max(y_height[:i1]) + 130  # Move text 30 units above max height
+        dryBrush_text = Text("Dry brush", font_size=35, color=DARK_BLUE).move_to(
+            axes_b.c2p(brush_x_center, brush_y_top)
+        )
+
+        # Find the middle x-position of the Swollen Brush region
+        droplet_x_center = (x_distance[i1] + x_distance[i2]) / 2
+        droplet_y_top = max(y_height[i1:i2]) - 60
+        swollenBrush_text = Text("Swollen Brush", font_size=35, color=BLUE).move_to(
+            axes_b.c2p(droplet_x_center, droplet_y_top)
+        )
+        # Find the middle x-position of the Droplet region
+        droplet_x_center = (x_distance[i2]) - 40
+        droplet_y_top = (max(y_height[i2:]) + min(y_height[i2:])) / 2
+        droplet_text = Text("Droplet", font_size=35, color=ORANGE).move_to(
+            axes_b.c2p(droplet_x_center, droplet_y_top)
+        )
+
+
+        # Animate the shaded region appearing
+        self.play(FadeIn(brush_fill_dry), FadeIn(dryBrush_text))
+        self.play(FadeIn(brush_fill_swollen), FadeIn(swollenBrush_text))
+        self.play(FadeIn(brush_fill_droplet), FadeIn(droplet_text))
+        # # Get the x-coordinates for positioning the colored backgrounds
+        # left_x = axes_b.c2p(0, 0)[0]  # Start of graph
+        # split_x = axes_b.c2p(x_split, 0)[0]  # x position at i1
+        # right_x = axes_b.c2p(max(x_distance), 0)[0]  # End of graph
+        #
+        # # Define Y positioning using axes_b bounds
+        # y_center = axes_b.get_center()[1]  # Middle of the graph
+        # y_top = axes_b.get_top()[1]  # Highest point
+        # y_bottom = axes_b.get_bottom()[1]  # Lowest point
+        #
+        # # Create background rectangles
+        # left_bg = Rectangle(
+        #     width=split_x - left_x, height=axes_b.y_length, color=DARK_BLUE, fill_opacity=0.2
+        # ).move_to([(left_x + split_x) / 2, y_center, 0])
+        #
+        # right_bg = Rectangle(
+        #     width=right_x - split_x, height=axes_b.y_length, color=ORANGE, fill_opacity=0.2
+        # ).move_to([(split_x + right_x) / 2, y_center, 0])
+        #
+        # # Adjust text positioning
+        # brush_text = Text("(Swollen) Polymer Brush", font_size=25, color=BLACK).move_to(
+        #     [(left_x + split_x) / 2, y_top - 0.5, 0]  # Shift text upward slightly
+        # )
+        #
+        # droplet_text = Text("Droplet", font_size=25, color=BLACK).move_to(
+        #     [(split_x + right_x) / 2, y_top - 0.5, 0]  # Shift text upward slightly
+        # )
+        #
+        # # Animate the background and text appearing
+        # self.play(FadeIn(left_bg), FadeIn(right_bg), Write(brush_text), Write(droplet_text))
+
         self.wait(2)
