@@ -532,15 +532,28 @@ class ExperimentalDataAnimation(Scene):
 
         self.wait(2)
 
-
+#WOKRING: USE THIS ONE for animating experimental Intensity & height data!
 class ExperimentalDataAnimationWhite(Scene):
-    #manim -pql .\main.py ExperimentalDataAnimationWhite
+    """
+    Animate 2 graphs top,a = brush/drop height vs distance; bot,b Intensity vs distance.
+    Import experimental data from csv. file. Import Extrema index locations from seperate (but corresponding!) .txt file.
+    Set transition indices of dry brush - swollen brush - droplet yourself!
+
+
+    Some text-locations in the graphs are hardcoded! Adjust as desired in code.
+    """
+    #uv run manim -pql .\main.py ExperimentalDataAnimationWhite
     config.background_color = WHITE
     def construct(self):
         # Import experimental data
         basepath = 'F:\\2025-01-30 PLMA-dodecane-Zeiss-Basler15uc-Xp1_32_BiBB4_tiltedplate-5deg-covered\\Swellingimages'
         fname = os.path.join(basepath, 'data28min 1s_anchor30_PureIntensity.csv')
         f_name_minmax = os.path.join(basepath, 'MinAndMaximaHandpicked264_1735_590.0211860602973_50.txt')
+
+        # Define i1 and i2 as the index where the transitions happen
+        i1 = 280  # Dry-swollen brush
+        i2 = 590  # Swollen brush - droplet
+
         file = open(fname)
         csvreader = csv.reader(file)
         x_distance = []
@@ -643,10 +656,6 @@ class ExperimentalDataAnimationWhite(Scene):
 
         self.wait(2)
 
-        # Define i1 as the index where the transition happens
-        i1 = 280  # Dry-swollen brush
-        i2 = 590  # Swollen brush - droplet
-
         ############## Animate linear fit on Droplet part
         # Get the two points (x1, y1) and (x2, y2)
         x1, y1 = x_distance[i2], y_height[i2]
@@ -715,20 +724,20 @@ class ExperimentalDataAnimationWhite(Scene):
         # Find the middle x-position of the Dry Brush region
         brush_x_center = (x_distance[0] + x_distance[i1]) / 2
         brush_y_top = max(y_height[:i1]) + 130  # Move text 30 units above max height
-        dryBrush_text = Text("Dry brush", font_size=35, color=DARK_BLUE).move_to(
+        dryBrush_text = Tex(r"\textbf{Dry brush}", font_size=35, color=DARK_BLUE).move_to(
             axes_b.c2p(brush_x_center, brush_y_top)
         )
 
         # Find the middle x-position of the Swollen Brush region
         droplet_x_center = (x_distance[i1] + x_distance[i2]) / 2
         droplet_y_top = max(y_height[i1:i2]) - 60
-        swollenBrush_text = Text("Swollen Brush", font_size=35, color=BLUE).move_to(
+        swollenBrush_text = Tex(r"\textbf{Swollen Brush}", font_size=35, color=BLUE).move_to(
             axes_b.c2p(droplet_x_center, droplet_y_top)
         )
         # Find the middle x-position of the Droplet region
         droplet_x_center = (x_distance[i2]) - 40
         droplet_y_top = (max(y_height[i2:]) + min(y_height[i2:])) / 2
-        droplet_text = Text("Droplet", font_size=35, color=ORANGE).move_to(
+        droplet_text = Tex(r"\textbf{Droplet}", font_size=35, color=ORANGE).move_to(
             axes_b.c2p(droplet_x_center, droplet_y_top)
         )
 
